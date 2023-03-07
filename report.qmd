@@ -1,0 +1,50 @@
+---
+title: "Electric Vehicle Charging Stations"
+author: "Jason Carey"
+format: 
+  pdf:
+    toc: true
+    number-sections: true
+    colorlinks: true
+---
+
+# Abstract
+
+General adoption of electric vehicles within the state of Colorado is rapidly increasing as consumer behavior shifts in response to continued negative affects of climate change. While traditional vehicles have had an infrastructure developed for their use over decades, the infrastructure required for adoption and reliable use of electric vehicles is still in its early phases. Given the current infrastructure in Colorado, we simulate trips taken in semi-realistic conditions by each of the top 15 electric vehicles by market share with consideration to their respective characteristics. At each station along our simulated route, we apply a Poisson distribution to model random inter-arrival times by other electric vehicle drivers, however, charging stations may originate from a variety of networks and by extension have differing compatibilities and charging speeds. At compatible stations, if there are available charging ports we assume each driver will recharge their vehicle to 80% of their range for battery longevity before continuing their route. Based on the outcome of the simulated trip, we implement machine learning methods to generate new charging station locations to reduce the overall rate of electric vehicle drivers failing to complete their designated routes.
+
+# Main
+
+## General Purpose/Application
+
+Electric vehicle charging station optimization (EVC) is a project initially developed in collaboration between Dr. Henricus Bouwmeester and Jason Carey and later enhanced through interdisciplinary collaboration with Dr. Sylvia Brady and Hayden Hoffmeister. EVC is meant to show an application of machine learning techniques to predict optimal charging station locations for electric vehicles in Colorado. Our predictions are based on multiple factors, including:
+- Characteristics of the top 15 electric vehicles by market share in Colorado, such as:
+    * EPA estimated range
+    * Plug compatibility (J1772, CCS1, Tesla, CHAdeMO)
+- Pre-existing and planned locations for charging stations
+- Availability of charging stations based on the number of charging ports at each station and random interarrival times of consumers
+- Zoning restrictions within cities and counties where predictions are located
+- Electric grid capacity at prediction locations
+
+It is our goal to show that using realistic conditions along a simulated trip, an electric vehicle will either successfully complete the trip or, upon failure, a coordinate point will be collected and used to determine where new stations would improve the success rate of future trips. Additionally, using machine learning methods like K-Means Clustering and Affinity Propagation, we aim to suggest the minimum number of stations that would provide a statistically significant reduction in failure rates; thus reducing the amount of electric vehicles that attempt to complete a trip in Colorado and are unable to reliably access electricity to recharge their vehicle.
+
+## Data Requirements/Constraints
+
+
+
+## Methodology
+
+
+
+## Results
+
+
+
+## Comparisons/References of Similar Work
+
+
+
+## Conclusions
+
+
+
+## Areas of Improvement/Alternative Methodologies to Consider

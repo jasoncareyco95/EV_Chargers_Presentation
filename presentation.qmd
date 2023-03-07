@@ -1,0 +1,351 @@
+---
+format: 
+  revealjs:
+    theme: simple
+    menu: false
+    transition: slide
+    smaller: true
+---
+
+```{css, echo = FALSE}
+.left-align {
+  text-align: left !important
+}
+
+.right-align {
+  text-align: right !important
+}
+
+.center-align {
+  text-align: center !important
+}
+```
+
+```{r, include=FALSE}
+#| echo: false
+
+## Load package libraries
+`%>%` <- getFromNamespace('%>%', "magrittr")
+
+## Get project data paths
+dataset_dir <- fs::dir_ls("C:/Users/jason/Documents/Programming Projects/Python/ev_chargers/datasets")
+
+## Charge stations data path
+v_chg_stations <- 
+  dataset_dir %>%
+  stringr::str_subset("alt_fuel_stations.shp")
+
+## EVs by Market Share data path
+v_ev_mkt_share <-
+  dataset_dir %>%
+  stringr::str_subset("ev_regs_by_mkt_share.csv")
+
+## Colorado Primary and Secondary Roadways
+v_co_roads <-
+  dataset_dir %>%
+  stringr::str_subset("co_roads.shp")
+
+```
+
+# Electric Vehicle Charging Station Optimization
+
+::: {.left-align}
+Metropolitan State University of Denver<br>
+Department of Mathematics and Statistics<br>
+Department of Geography, Earth and Atmospheric Sciences<br>
+:::
+
+::: {.right-align}
+Dr. Henricus Bouwmeester<br>
+Dr. Sylvia Brady<br>
+Hayden Hoffmeister<br>
+Jason Carey<br>
+:::
+
+<!-- authors: -->
+<!--   - name: "Dr. Henricus Bouwmeester" -->
+<!--     email: "hbouwmee@msudenver.edu" -->
+<!--     affiliations: -->
+<!--       - name: "MSU Denver - Mathematics and Statistics" -->
+<!--   - name: "Dr. Sylvia Brady" -->
+<!--     email: "sbrady16@msudenver.edu" -->
+<!--     affiliations: -->
+<!--       - name: "MSU Denver - Geography, Earth and Atmospheric Sciences" -->
+<!--   - name: "Hayden Hoffmeister" -->
+<!--     email: "hhoffmei@msudenver.edu" -->
+<!--     affiliations: -->
+<!--       - name: "MSU Denver - Geography, Earth and Atmospheric Sciences" -->
+<!--   - name: "Jason Carey" -->
+<!--     email: "jcarey9@msudenver.edu" -->
+<!--     affiliations: -->
+<!--       - name: "MSU Denver - Mathematics and Statistics" -->
+
+# Project Overview
+
+## Context
+
+
+
+## Our Goals
+
+- Using semi-realistic conditions along a simulated trip, we want to show an electric vehicle will either successfully complete the trip or, upon failure, a coordinate point will be collected and used to determine where new stations would improve the success rate of future trips
+
+- Additionally, applying machine learning methods like K-Means Clustering and Affinity Propagation, we aim to suggest the minimum number of stations that would provide a statistically significant reduction in failure rates
+
+- Both objectives should serve to reduce the amount of electric vehicle drivers that attempt to complete a trip in Colorado and are unable to reliably access electricity to recharge their vehicles
+
+## Taking Action
+
+
+
+# Data
+
+## Inbound Sources
+
+The data used to run our simulations and create a foundation for our models is collected from the following locations:
+
+- Electric Vehicle Charging Stations
+    - US Department of Energy - Alternative Fuels Data Center: [Charging Stations](https://afdc.energy.gov/stations/#/analyze?region=US-CO&country=US&fuel=ELEC&ev_levels=all&status=E&status=P)
+
+- Colorado Electric Vehicle Registration Data
+    - Atlas EV Hub^[Hosts the data originally collected by the Colorado Energy Office] / Colorado Energy Office: [EV Registrations](https://www.atlasevhub.com/materials/state-ev-registration-data/#data)
+
+- Colorado Primary and Secondary Roadways
+    - US Census Bureau: [Roadways](https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2021&layergroup=Roads)
+    
+::: aside
+:::
+
+## Electric Vehicle Charging Stations
+
+- Our charging stations data table consists of the following features giving us insights into characteristics of each publicly available charging station in the state
+
+```{r}
+#| echo: false
+
+d_chg_stations <-
+  v_chg_stations %>%
+  sf::read_sf() %>%
+  sf::st_drop_geometry() %>%
+  head(n = 6) %>%
+  gt::gt() %>%
+  gt::tab_header(title = "Public Charging Station Locations in Colorado") %>%
+  gt::cols_label(
+    street_add = "Address",
+    city = "City",
+    state = "State",
+    zip = "ZIP",
+    l1_ports = "Level 1 Ports",
+    l2_ports = "Level 2 Ports",
+    l3_ports = "DC Fast Charge Ports",
+    sum_ports = "Total Ports",
+    ev_network = "Charging Network",
+    longitude = "Longitude",
+    latitude = "Latitude",
+    ev_sockets = "Compatible Sockets"
+  ) %>%
+  gt::tab_footnote(
+    footnote = "Data shows first 6 of 1,698 station locations, with the data last collected on February 3rd, 2023"
+  ) %>%
+  gt::as_raw_html()
+
+d_chg_stations
+
+```
+
+## Electric Vehicle Sockets
+
+:::: {.columns}
+
+::: {.column width="60%"}
+- When setting up our simulations we determine which vehicle is going to be used and filter the charging station table to compatible stations
+
+- To accomplish this, we've encoded socket compatibility with the map shown:
+
+- *Note*: We ignore NEMA520 and NEMA515 plugs because none of the top 15 electric vehicles by market share have compatibility with these sockets^[And they make up a fraction of overall station locations!]
+:::
+
+::: {.column width="40%"}
+```{r}
+#| echo: false
+
+d_ev_sockets <- 
+  dplyr::tibble(
+    socket_type = c("CCS1", "J1772", "Tesla", "CHAdeMO"),
+    value = c(1:4)
+  ) %>%
+  gt::gt(rowname_col = "socket_type") %>%
+  gt::tab_header(title = "Socket Compatibility Map") %>%
+  gt::tab_stubhead(label = "Socket Type") %>%
+  gt::cols_label(value = "Value") %>%
+  gt::as_raw_html()
+
+d_ev_sockets
+
+```
+:::
+
+::: aside
+:::
+
+::::
+
+## Colorado Electric Vehicle Registration Data 
+
+:::: {.columns}
+
+::: {.column width="40%"}
+- Exploring the electric vehicle registration data for Colorado we determined that the 15 vehicles shown would be used in our simulations
+
+- *Note*: Socket/plug compatibility is also included in this table for our simulations, however, is omitted here for clarity
+:::
+
+::: {.column width="60%"}
+```{r}
+#| echo: false
+
+d_ev_mkt_share <-
+  v_ev_mkt_share %>%
+  readr::read_csv(show_col_types = FALSE) %>%
+  dplyr::select(-sockets) %>%
+  dplyr::mutate(mkt_share = mkt_share / 100) %>%
+  gt::gt(rowname_col = "index") %>%
+  gt::tab_header(title = "Electric Vehicles in Colorado by Market Share") %>%
+  gt::cols_label(
+    vehicle_make = "Manufacturer",
+    vehicle_model = "Model",
+    range = "Range",
+    mkt_share = "Market Share (%)"
+  ) %>%
+  gt::tab_footnote("Based on active registrations with the DMV") %>%
+  gt::fmt_integer(range) %>%
+  gt::fmt_percent(mkt_share) %>%
+  gt::as_raw_html()
+
+d_ev_mkt_share
+
+```
+:::
+
+::::
+
+## Colorado Primary and Secondary Roadways
+
+- We utilize TIGER/Line Shapefiles for when we make adjustments to our machine learning model suggestions 
+
+- These adjustments ensure that model suggestions are in valid locations along a primary or secondary roadway and in an appropriate zone with capacity for a new station to be built
+
+- Shapefiles containing geometric features tend to be messy so here's a plot instead:
+
+```{r}
+#| echo: false
+
+raster::getData(country = "USA", level = 1) %>%
+  .[.$NAME_1 == "Colorado",] %>%
+  raster::plot()
+
+v_co_roads %>%
+  sf::read_sf() %>%
+  sf::st_geometry() %>%
+  plot(add = TRUE)
+
+```
+
+## Outbound Schema
+
+- After running the simulations, a schema has been created using the vehicle number and seed of the simulation number as keys to link all associated records
+
+- The data frames in this schema include:
+  - Route details
+  - Charging station uses
+  - Vehicle information
+  - Simulation outcomes
+
+# Methodology
+
+## Vehicles
+
+- Our project takes a vehicle specific approach to generating new charging station suggestions
+
+- Each electric vehicle has specific characteristics such as range, socket compatibility, build quality, estimated useful battery life, etc
+
+- A universal model would be too general to suggest meaningful station locations for the consumer of these vehicles because of the diversity in each model
+
+## Route Generation
+
+:::: {.columns}
+
+::: {.column width="60%"}
+- Routes created by our model adhere to a few constraints:
+  - They must exceed the range of the vehicle being simulated
+  - They must stay within Colorado
+
+- Routes also attempt to mimic population density with:
+  - 60% of routes originating from the Greater Denver Metropolitan Area
+  - 35% of routes originating from the Greater Front Range (Colorado Springs to Fort Collins)
+  - 5% of routes originating from anywhere within Colorado
+  
+- Avoiding situations where outcomes could be 'false positives' by using charging stations outside of Colorado was critical
+:::
+
+::: {.column width="40%"}
+![Public Routing using OSRM API](PublicRouting.png)
+![Our Routing using OSRM Server](OurRouting.png)
+:::
+
+::::
+
+## Route Simulation
+
+- Simulations attempt to mimic semi-realistic conditions by following these steps:
+  - Select a randomized starting position within our starting polygons
+  - Select a randomized ending position at *least* the range of the vehicle away from the starting position
+  - Create a connecting route between the two points
+  - Begin 'driving' by reducing the vehicle's battery according to the distance traveled
+  - At 30% battery capacity locate the closest charging stations and determine if they are **available**:
+    - We use a Poisson distribution generation function to determine if based on random arrivals the number of plugs at the station are full or if at least one is available for use
+  - If there are plugs available re-route to the station and recharge to **80%** battery capacity^[We recharge to 80% capacity because charging above 80% negatively impacts the useful life of the battery in the vehicle]
+  - Once recharged, continue to our destination before turning around and repeating the same process on the way back to the starting position
+
+::: aside
+:::
+
+## Initial Incomplete Trips
+
+:::: {.columns}
+
+::: {.column width="60%"}
+- Each vehicle was subjected to approximately 20,000 simulated trips for a large enough sample of failures to create meaningful clusters
+
+- 
+:::
+
+::: {.column width="40%"}
+```{r}
+
+```
+:::
+
+::::
+
+## Models
+
+## New Stations
+
+## Final Incomplete Trips
+
+# Results
+
+## Outcome Analysis
+
+# Future Enhancements
+
+## Solution Enhancements
+
+## Future Features
+
+# Conclusion
+
+## Achievements
+
+## Closing Statements
