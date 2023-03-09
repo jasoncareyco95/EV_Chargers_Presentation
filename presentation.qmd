@@ -33,10 +33,9 @@ format:
 
 ## Load package libraries
 library(magrittr)
-library(ggplot2)
 
 ## Get project data paths
-dataset_dir <- fs::dir_ls("C:/Users/jason/Documents/Programming Projects/R/evc_presentation/presentation_files/data")
+dataset_dir <- fs::dir_ls(paste0(fs::path_wd(), "/presentation_files/data/"))
 
 ## Charge stations data path
 v_chg_stations <- 
@@ -53,10 +52,20 @@ v_co_roads <-
   dataset_dir %>%
   stringr::str_subset("co_roads.shp")
 
-## Get failed outcomes by vehicle for presentation
+## Failed outcomes by vehicle before models
 v_probability_outcomes <-
   dataset_dir %>%
   stringr::str_subset("all_simulations.csv")
+
+## Model suggestions
+v_model_suggestions <-
+  dataset_dir %>%
+  stringr::str_subset("fuel_stations_w_model_outcomes.csv")
+
+## Failed outcomes by vehicle after models
+v_phase_2_outcomes <-
+  dataset_dir %>%
+  stringr::str_subset("phase_2_failed_simulations.csv")
 
 ```
 
@@ -97,7 +106,7 @@ The data used to run our simulations and create a foundation for our models is c
     - US Department of Energy - Alternative Fuels Data Center: [Charging Stations](https://afdc.energy.gov/stations/#/analyze?region=US-CO&country=US&fuel=ELEC&ev_levels=all&status=E&status=P)
 
 - Colorado Electric Vehicle Registration Data
-    - Atlas EV Hub^[Hosts the data originally collected by the Colorado Energy Office] / Colorado Energy Office: [EV Registrations](https://www.atlasevhub.com/materials/state-ev-registration-data/#data)
+    - Atlas EV Hub^[Hosts the data originally collected by the Colorado Energy Office<br>_] / Colorado Energy Office: [EV Registrations](https://www.atlasevhub.com/materials/state-ev-registration-data/#data)
 
 - Colorado Primary and Secondary Roadways
     - US Census Bureau: [Roadways](https://www.census.gov/cgi-bin/geo/shapefiles/index.php?year=2021&layergroup=Roads)
@@ -154,7 +163,7 @@ d_chg_stations_gt
 
 - To accomplish this, we've encoded socket compatibility with the map shown:
 
-- *Note*: We ignore NEMA520 and NEMA515 plugs because none of the top 15 electric vehicles by market share have compatibility with these sockets^[And they make up a fraction of overall station locations!]
+- *Note*: We ignore NEMA520 and NEMA515 plugs because none of the top 15 electric vehicles by market share have compatibility with these sockets^[And they make up a fraction of overall station locations!<br>_]
 :::
 
 ::: {.column width="40%"}
@@ -299,6 +308,8 @@ d_outcome_schema_gt
 :::: {.columns}
 
 ::: {.column width="60%"}
+
+::: {.incremental}
 - Routes created by our model adhere to a few constraints:
   - They must exceed the range of the vehicle being simulated
   - They must stay within Colorado
@@ -311,13 +322,17 @@ d_outcome_schema_gt
 - Avoiding situations where outcomes could be 'false positives' by using charging stations outside of Colorado was critical
 :::
 
+:::
+
 ::: {.column width="40%"}
 
 :::
 
 ::::
 
-## Route Simulation {.incremental background-image="presentation_files/images/slide_background.png"}
+## Route Simulation {background-image="presentation_files/images/slide_background.png"}
+
+::: {.incremental}
 
 - Simulations attempt to mimic semi-realistic conditions by following these steps:
   - Select a randomized starting position within our starting polygons
@@ -326,26 +341,29 @@ d_outcome_schema_gt
   - Begin 'driving' by reducing the vehicle's battery according to the distance traveled
   - At 30% battery capacity locate the closest charging stations and determine if they are **available**:
     - We use a Poisson distribution generation function to determine if based on random arrivals the number of plugs at the station are full or if at least one is available for use
-  - If there are plugs available re-route to the station and recharge to **80%** battery capacity^[We recharge to 80% capacity because charging above 80% negatively impacts the useful life of the battery in the vehicle]
+  - If there are plugs available re-route to the station and recharge to **80%** battery capacity^[We recharge to 80% capacity because charging above 80% negatively impacts the useful life of the battery in the vehicle<br>_]
   - Once recharged, continue to our destination before turning around and repeating the same process on the way back to the starting position
+
+:::
 
 ::: aside
 :::
 
 ## Poisson Distribution {auto-animate="true" background-image="presentation_files/images/slide_background.png"}
 
-- A distribution used to model the probability of an event occurring given the number of events that will occur, and the average occurrence rate ($$\lambda$$) over a period of time
+- A distribution used to model the probability of an event occurring given the number of events that will occur, and the average occurrence rate ($\lambda$) over a period of time
 
 :::: {.columns}
 
 ::: {.column width="40%"}
 
 - Mathematically expressed as<br>
-$$P\left(x, \lambda\right) = \frac{{e^{ - \lambda } \lambda ^x }}{{x!}}$$ for $$x = 0, 1, 2, ...$$
+$P\left(x, \lambda\right) = \frac{{e^{ - \lambda } \lambda ^x }}{{x!}}$ for $x = 0, 1, 2, ...$
 
-- We can plot what this may look like over $$n = 30$$ events using the following code:
+- We can plot what this may look like over $n = 30$ events using the following code:
 
 ```{r}
+#| echo: fenced
 
 ## How many events will occur?
 events <- c(0:30)
@@ -357,24 +375,23 @@ pmf <- dpois(x = events, lambda = 8)
 pmf_df <- data.frame(events, pmf)
 
 ## Plot the Poisson Distribution
-p <- ggplot(
+p <- ggplot2::ggplot(
   data = pmf_df, 
-  mapping = aes(
+  mapping = ggplot2::aes(
     x = events,
     y = pmf
   )) + 
-  geom_point() +
-  geom_line() +
-  labs(
+  ggplot2::geom_point() +
+  ggplot2::geom_line() +
+  ggplot2::labs(
     title = "Poisson Distribution",
     subtitle = "With x = 30, lambda = 8",
     x = "Events",
     y = "Probability"
   ) +
-  theme_light()
+  ggplot2::theme_light()
 
 ```
-
 :::
 
 ::: {.column width="60%"}
@@ -462,13 +479,13 @@ d_initial_outcomes_gt
 
 :::: {.columns}
 
-::: {.column width="40%"}
+::: {.column width="50%"}
 
 - K-Means Clustering
 
 :::
 
-::: {.column width="40%"}
+::: {.column width="50%"}
 
 - Affinity Propagation
 
@@ -478,11 +495,228 @@ d_initial_outcomes_gt
 
 ## New Stations {background-image="presentation_files/images/slide_background.png"}
 
+:::: {.columns}
+
+::: {.column width="40%"}
+- For each vehicle, our models created suggestions of where to construct new charging stations based on the centroids of each cluster of simulation failures
+
+- We attempted to validate these suggestions by shifting them to the closest primary or secondary roadways
+:::
+
+::: {.column width="60%"}
+```{r}
+#| echo: false
+
+d_model_suggestions <-
+  v_model_suggestions %>%
+  readr::read_csv(
+    col_select = 2:dplyr::last_col(),
+    show_col_types = FALSE 
+  ) %>%
+  dplyr::filter(!is.na(vehicle)) %>% 
+  dplyr::group_by(
+    street_add,
+    vehicle
+  ) %>%
+  dplyr::summarise(
+    suggestions = dplyr::n(),
+    .groups = "drop"
+  ) %>%
+  tidyr::pivot_wider(
+    names_from = street_add,
+    values_from = suggestions
+  ) %>%
+  dplyr::left_join(
+    y = d_ev_mkt_share %>%
+      dplyr::select(
+        index, 
+        vehicle_make, 
+        vehicle_model
+      ),
+    by = c("vehicle" = "index")
+  ) %>%
+  dplyr::select(
+    vehicle_make, 
+    vehicle_model,
+    `KMeans Model`,
+    `AP Model`
+  ) %>%
+  janitor::clean_names()
+
+d_model_suggestions_gt <-
+  d_model_suggestions %>%
+  gt::gt() %>%
+  gt::tab_header(title = "Model Suggestions by Vehicle") %>%
+  gt::cols_label(
+    vehicle_make = "Manufacturer",
+    vehicle_model = "Model",
+    k_means_model = "K-Means Suggestions",
+    ap_model = "Affinity Propagation Suggestions"
+  ) %>%
+  gt::fmt_integer(c(k_means_model, ap_model)) %>%
+  gt::as_raw_html()
+
+d_model_suggestions_gt
+
+```
+:::
+
+::::
+
 ## Final Incomplete Trips {background-image="presentation_files/images/slide_background.png"}
+
+- After incorporating the validated affinity propagation suggestions into our fuel stations data, we retried the simulations that failed to see if there was a change
+
+```{r}
+#| echo: false
+
+d_phase_2_outcomes <-
+  v_phase_2_outcomes %>%
+  readr::read_csv(
+    col_select = 2:3,
+    show_col_types = FALSE 
+  ) %>%
+  dplyr::group_by(
+    vehicle
+  ) %>%
+  dplyr::summarise(
+    num_failed_am = dplyr::n(),
+    .groups = "drop"
+  ) %>%
+  tidyr::complete(
+    vehicle = 1:15,
+    fill = list(num_failed_am = 0)
+  ) %>%
+  dplyr::left_join(
+    y = d_ev_mkt_share %>%
+      dplyr::select(
+        index, 
+        vehicle_make, 
+        vehicle_model
+      ),
+    by = c("vehicle" = "index")
+  ) %>%
+  dplyr::left_join(
+    y = d_initial_outcomes,
+    by = c("vehicle_make", "vehicle_model")
+  ) %>%
+  dplyr::mutate(
+    p_failed_am = num_failed_am / simulations
+  ) %>%
+  dplyr::select(
+    vehicle_make, 
+    vehicle_model,
+    simulations,
+    num_failed_bm = num_failed,
+    p_failed_bm = prop_failed,
+    num_failed_am,
+    p_failed_am
+  ) %>%
+  dplyr::arrange(
+    ## Just for you Kyle ;)
+    -p_failed_bm,
+    -p_failed_am
+  )
+
+d_phase_2_gt <-
+  d_phase_2_outcomes %>%
+  gt::gt() %>%
+  gt::tab_header(title = "Vehicle Outcomes After Incorporating Model Suggestions") %>%
+  gt::cols_label(
+    vehicle_make = "Manufacturer",
+    vehicle_model = "Model",
+    simulations = "Simulations",
+    num_failed_bm = "Original Failures",
+    p_failed_bm = "Original Failure Percentage",
+    num_failed_am = "New Failures",
+    p_failed_am = "New Failure Percentage"
+  ) %>%
+  gt::fmt_integer(c(simulations, num_failed_bm, num_failed_am)) %>%
+  gt::fmt_percent(c(p_failed_bm, p_failed_am)) %>%
+  gt::as_raw_html()
+
+d_phase_2_gt
+
+```
+:::
+
+::::
 
 # Results {background-image="presentation_files/images/slide_background.png"}
 
 ## Outcome Analysis {background-image="presentation_files/images/slide_background.png"}
+
+- Were our model's suggestions statistically significant?
+
+:::: {.columns}
+::: {.column width="50%"}
+
+```{r}
+#| echo: true
+
+## Vehicles to test
+vehicles <- c(1:15)
+
+## Data frame of results
+d_test_results <-
+  vehicles %>%
+  purrr::map_dfr(
+    .f = ~{
+      
+      ## Get vehicle record
+      vr <- 
+        d_phase_2_outcomes %>%
+        dplyr::slice(.x)
+      
+      ## Test results
+      tr <- prop.test(
+        x = c(vr$num_failed_bm[1], vr$num_failed_am[1]), 
+        n = c(vr$simulations[1], vr$simulations[1]),
+        alternative = "two.sided",
+        conf.level = .99
+      )
+      
+      ## Collect values
+      res <- 
+        vr %>%
+        dplyr::select(
+          vehicle_make,
+          vehicle_model
+        ) %>%
+        dplyr::mutate(
+          x_squared = tr$statistic,
+          p_value = tr$p.value
+        )
+      
+    }
+  )
+```
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| echo: false
+
+d_test_results_gt <-
+  d_test_results %>%
+  gt::gt() %>%
+  gt::tab_header(title = "Vehicle Outcomes After Incorporating Model Suggestions") %>%
+  gt::cols_label(
+    vehicle_make = "Manufacturer",
+    vehicle_model = "Model",
+    x_squared = "Chi-Squared Test Statistic",
+    p_value = "P-Value"
+  ) %>%
+  gt::fmt_number(x_squared) %>%
+  gt::fmt_scientific(p_value) %>%
+  gt::as_raw_html()
+
+d_test_results_gt
+
+```
+:::
+::::
 
 # Future Enhancements {background-image="presentation_files/images/slide_background.png"}
 
@@ -491,6 +725,7 @@ d_initial_outcomes_gt
 - In future iterations of this project we aim to enhance our simulation conditions:
   - Elevation should factor into energy consumption
   - Weather and temperature likely have an adverse effect on range
+  - Add route variation such as loops, instead of out and back trips
   
 - We also plan to research more into the cost of removing inefficient station locations in favor of consolidating ports with minimal network reliability impact
 
@@ -500,21 +735,11 @@ d_initial_outcomes_gt
 
 - Using our simulation algorithm we were able to reduce the number of failed trips by suggesting the fewest necessary charging stations in key locations
 
-- The largest reduction
+- The largest reduction was from the Nissan Leaf from 2,339 failed trips to 78 failed trips over 20,007 simulations
 
 ## Closing Statements {background-image="presentation_files/images/slide_background.png"}
 
 - Thanks for listening!
 
-:::: {.columns}
-
-::: {.column width="50%"}
-- Follow us on GitHub 💻
-  - @jasoncareyco95
-:::
-
-::: {.column width="50%"}
 - Send us an email ✉️
   - jcarey9@msudenver.edu
-:::
-::::
