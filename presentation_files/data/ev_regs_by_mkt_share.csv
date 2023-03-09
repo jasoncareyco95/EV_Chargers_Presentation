@@ -1,0 +1,16 @@
+index,vehicle_make,vehicle_model,range,sockets,mkt_share
+1,Tesla,Model 3,315,"3, 1, 2",25.48049163
+2,Tesla,Model Y,330,"3, 1, 2",20.76012538
+3,Nissan,Leaf,212,"2, 4",15.34479914
+4,Tesla,Model S,396,"3, 1, 2",7.993071022
+5,Tesla,Model X,333,"3, 1, 2",5.221479832
+6,Chevrolet,Bolt EV,259,2,4.328549039
+7,Ford,Mustang Mach-E,247,"2, 1",2.868514394
+8,Volkswagen,ID 4,275,"2, 1",1.990018972
+9,Audi,E-Tron,225,"2, 1",1.672440815
+10,Kia,Niro,253,"2, 1",1.474470016
+11,Rivian,R1T,328,"2, 1",1.251752866
+12,Hyundai,IONIQ 5,266,"2, 1",1.222882125
+13,Polestar,PS2,270,"2, 1",0.963045451
+14,Kia,EV6,232,"2, 1",0.942423493
+15,Hyundai,Kona Electric,258,"2, 1",0.890868597

@@ -1,13 +1,24 @@
 ---
+title: "Electric Vehicle Charging Station Optimization 🚘️"
+authors:
+  - name: "Dr. Henricus Bouwmeester<br>Jason Carey"
+    affiliations:
+      - name: "Mathematics and Statistics"
+  - name: "Dr. Sylvia Brady<br>Hayden Hoffmeister"
+    affiliations:
+      - name: "Geography, Earth and Atmospheric Sciences"
 format: 
   revealjs:
     theme: simple
-    menu: false
     transition: slide
     smaller: true
+    slide-number: c/t
+    title-slide-attributes: 
+      data-background-image: presentation_files/images/slide_background.png
+      data-background-size: cover
 ---
 
-```{css, echo = FALSE}
+```{css, include=FALSE}
 .left-align {
   text-align: left !important
 }
@@ -15,20 +26,17 @@ format:
 .right-align {
   text-align: right !important
 }
-
-.center-align {
-  text-align: center !important
-}
 ```
 
 ```{r, include=FALSE}
 #| echo: false
 
 ## Load package libraries
-`%>%` <- getFromNamespace('%>%', "magrittr")
+library(magrittr)
+library(ggplot2)
 
 ## Get project data paths
-dataset_dir <- fs::dir_ls("C:/Users/jason/Documents/Programming Projects/Python/ev_chargers/datasets")
+dataset_dir <- fs::dir_ls("C:/Users/jason/Documents/Programming Projects/R/evc_presentation/presentation_files/data")
 
 ## Charge stations data path
 v_chg_stations <- 
@@ -45,62 +53,43 @@ v_co_roads <-
   dataset_dir %>%
   stringr::str_subset("co_roads.shp")
 
+## Get failed outcomes by vehicle for presentation
+v_probability_outcomes <-
+  dataset_dir %>%
+  stringr::str_subset("all_simulations.csv")
+
 ```
 
-# Electric Vehicle Charging Station Optimization
+# Project Overview {background-image="presentation_files/images/slide_background.png"}
 
-::: {.left-align}
-Metropolitan State University of Denver<br>
-Department of Mathematics and Statistics<br>
-Department of Geography, Earth and Atmospheric Sciences<br>
-:::
+## Context {background-image="presentation_files/images/slide_background.png"}
 
-::: {.right-align}
-Dr. Henricus Bouwmeester<br>
-Dr. Sylvia Brady<br>
-Hayden Hoffmeister<br>
-Jason Carey<br>
-:::
+- If you were interested in financing a new car, specifically an electric vehicle, which would be the most reliable?
 
-<!-- authors: -->
-<!--   - name: "Dr. Henricus Bouwmeester" -->
-<!--     email: "hbouwmee@msudenver.edu" -->
-<!--     affiliations: -->
-<!--       - name: "MSU Denver - Mathematics and Statistics" -->
-<!--   - name: "Dr. Sylvia Brady" -->
-<!--     email: "sbrady16@msudenver.edu" -->
-<!--     affiliations: -->
-<!--       - name: "MSU Denver - Geography, Earth and Atmospheric Sciences" -->
-<!--   - name: "Hayden Hoffmeister" -->
-<!--     email: "hhoffmei@msudenver.edu" -->
-<!--     affiliations: -->
-<!--       - name: "MSU Denver - Geography, Earth and Atmospheric Sciences" -->
-<!--   - name: "Jason Carey" -->
-<!--     email: "jcarey9@msudenver.edu" -->
-<!--     affiliations: -->
-<!--       - name: "MSU Denver - Mathematics and Statistics" -->
+- Is the EPA estimated range on the vehicle enough?
 
-# Project Overview
+- What happens if I run out of charge? Are there enough accessible stations I can get to to recharge?
 
-## Context
+## Our Goals {background-image="presentation_files/images/slide_background.png"}
 
+- Use semi-realistic conditions in simulated routes taken by electric vehicles to predict possible areas where you may run out of energy
 
+- Apply machine learning models to suggest new charging stations in optimal locations
 
-## Our Goals
+## Taking Action {background-image="presentation_files/images/slide_background.png"}
 
-- Using semi-realistic conditions along a simulated trip, we want to show an electric vehicle will either successfully complete the trip or, upon failure, a coordinate point will be collected and used to determine where new stations would improve the success rate of future trips
+- Our predictions are based on multiple factors, including:
+  - Characteristics of the top 15 electric vehicles by market share in Colorado, such as:
+    - EPA estimated range
+    - Plug compatibility (J1772, CCS1, Tesla, CHAdeMO)
+  - Pre-existing and planned locations for charging stations
+  - Availability of charging stations based on the number of charging ports at each station and random interarrival times of consumers
+  - Zoning restrictions within cities and counties where predictions are located
+  - Electric grid capacity at prediction locations
 
-- Additionally, applying machine learning methods like K-Means Clustering and Affinity Propagation, we aim to suggest the minimum number of stations that would provide a statistically significant reduction in failure rates
+# Data {background-image="presentation_files/images/slide_background.png"}
 
-- Both objectives should serve to reduce the amount of electric vehicle drivers that attempt to complete a trip in Colorado and are unable to reliably access electricity to recharge their vehicles
-
-## Taking Action
-
-
-
-# Data
-
-## Inbound Sources
+## Inbound Sources {background-image="presentation_files/images/slide_background.png"}
 
 The data used to run our simulations and create a foundation for our models is collected from the following locations:
 
@@ -116,7 +105,7 @@ The data used to run our simulations and create a foundation for our models is c
 ::: aside
 :::
 
-## Electric Vehicle Charging Stations
+## Electric Vehicle Charging Stations {background-image="presentation_files/images/slide_background.png"}
 
 - Our charging stations data table consists of the following features giving us insights into characteristics of each publicly available charging station in the state
 
@@ -127,7 +116,10 @@ d_chg_stations <-
   v_chg_stations %>%
   sf::read_sf() %>%
   sf::st_drop_geometry() %>%
-  head(n = 6) %>%
+  head(n = 6)
+
+d_chg_stations_gt <-
+  d_chg_stations %>%
   gt::gt() %>%
   gt::tab_header(title = "Public Charging Station Locations in Colorado") %>%
   gt::cols_label(
@@ -149,11 +141,11 @@ d_chg_stations <-
   ) %>%
   gt::as_raw_html()
 
-d_chg_stations
+d_chg_stations_gt
 
 ```
 
-## Electric Vehicle Sockets
+## Electric Vehicle Sockets {background-image="presentation_files/images/slide_background.png"}
 
 :::: {.columns}
 
@@ -173,14 +165,17 @@ d_ev_sockets <-
   dplyr::tibble(
     socket_type = c("CCS1", "J1772", "Tesla", "CHAdeMO"),
     value = c(1:4)
-  ) %>%
+  )
+
+d_ev_sockets_gt <- 
+  d_ev_sockets %>%
   gt::gt(rowname_col = "socket_type") %>%
   gt::tab_header(title = "Socket Compatibility Map") %>%
   gt::tab_stubhead(label = "Socket Type") %>%
   gt::cols_label(value = "Value") %>%
   gt::as_raw_html()
 
-d_ev_sockets
+d_ev_sockets_gt
 
 ```
 :::
@@ -190,7 +185,7 @@ d_ev_sockets
 
 ::::
 
-## Colorado Electric Vehicle Registration Data 
+## Colorado Electric Vehicle Registration Data {background-image="presentation_files/images/slide_background.png"}
 
 :::: {.columns}
 
@@ -208,7 +203,10 @@ d_ev_mkt_share <-
   v_ev_mkt_share %>%
   readr::read_csv(show_col_types = FALSE) %>%
   dplyr::select(-sockets) %>%
-  dplyr::mutate(mkt_share = mkt_share / 100) %>%
+  dplyr::mutate(mkt_share = mkt_share / 100) 
+
+d_ev_mkt_share_gt <-
+  d_ev_mkt_share %>%
   gt::gt(rowname_col = "index") %>%
   gt::tab_header(title = "Electric Vehicles in Colorado by Market Share") %>%
   gt::cols_label(
@@ -217,53 +215,78 @@ d_ev_mkt_share <-
     range = "Range",
     mkt_share = "Market Share (%)"
   ) %>%
-  gt::tab_footnote("Based on active registrations with the DMV") %>%
+  gt::tab_footnote("Based on active registrations with the DMV as of February 1st, 2023") %>%
   gt::fmt_integer(range) %>%
   gt::fmt_percent(mkt_share) %>%
   gt::as_raw_html()
 
-d_ev_mkt_share
+d_ev_mkt_share_gt
 
 ```
 :::
 
 ::::
 
-## Colorado Primary and Secondary Roadways
+## Colorado Primary and Secondary Roadways {background-image="presentation_files/images/slide_background.png"}
 
-- We utilize TIGER/Line Shapefiles for when we make adjustments to our machine learning model suggestions 
+- We reference TIGER/Line Shapefiles for when we make adjustments to our machine learning model suggestions 
 
-- These adjustments ensure that model suggestions are in valid locations along a primary or secondary roadway and in an appropriate zone with capacity for a new station to be built
+- These adjustments ensure that model suggestions are in valid locations along a primary or secondary roadways
 
-- Shapefiles containing geometric features tend to be messy so here's a plot instead:
-
-```{r}
-#| echo: false
-
-raster::getData(country = "USA", level = 1) %>%
-  .[.$NAME_1 == "Colorado",] %>%
-  raster::plot()
-
-v_co_roads %>%
-  sf::read_sf() %>%
-  sf::st_geometry() %>%
-  plot(add = TRUE)
-
-```
-
-## Outbound Schema
+## Outbound Schema {background-image="presentation_files/images/slide_background.png"}
 
 - After running the simulations, a schema has been created using the vehicle number and seed of the simulation number as keys to link all associated records
 
+:::: {.columns}
+
+::: {.column width="40%"}
 - The data frames in this schema include:
   - Route details
   - Charging station uses
   - Vehicle information
   - Simulation outcomes
+  
+- This is a sample of our simulation outcomes table, where 0 is a successful trip and 1 is unsuccessful
+:::
 
-# Methodology
+::: {.column width="60%"}
+```{r}
+#| echo: false
 
-## Vehicles
+d_outcome_schema <-
+  v_probability_outcomes %>%
+  readr::read_csv(
+    show_col_types = FALSE, 
+    col_select = vehicle:outcome
+  ) %>%
+  dplyr::arrange(vehicle) %>%
+  head(n = 6)
+
+d_outcome_schema_gt <-
+  d_outcome_schema %>%
+  gt::gt(rowname_col = "vehicle") %>%
+  gt::tab_header(title = "Outcomes of Simulated Routes by Vehicle") %>%
+  gt::cols_label(
+    seed = "Seed",
+    start_point = "Starting Position",
+    end_point = "Ending Position",
+    distance = "Distance (m)",
+    outcome = "Simulation Outcome"
+  ) %>%
+  gt::tab_footnote("Data shows first 6 of 166,725 simulated routes across 15 vehicle models") %>%
+  gt::fmt_integer(distance) %>%
+  gt::as_raw_html()
+
+d_outcome_schema_gt
+
+```
+:::
+
+::::
+
+# Methodology {background-image="presentation_files/images/slide_background.png"}
+
+## Vehicles {background-image="presentation_files/images/slide_background.png"}
 
 - Our project takes a vehicle specific approach to generating new charging station suggestions
 
@@ -271,7 +294,7 @@ v_co_roads %>%
 
 - A universal model would be too general to suggest meaningful station locations for the consumer of these vehicles because of the diversity in each model
 
-## Route Generation
+## Route Generation {.incremental background-image="presentation_files/images/slide_background.png"}
 
 :::: {.columns}
 
@@ -289,13 +312,12 @@ v_co_roads %>%
 :::
 
 ::: {.column width="40%"}
-![Public Routing using OSRM API](PublicRouting.png)
-![Our Routing using OSRM Server](OurRouting.png)
+
 :::
 
 ::::
 
-## Route Simulation
+## Route Simulation {.incremental background-image="presentation_files/images/slide_background.png"}
 
 - Simulations attempt to mimic semi-realistic conditions by following these steps:
   - Select a randomized starting position within our starting polygons
@@ -310,42 +332,189 @@ v_co_roads %>%
 ::: aside
 :::
 
-## Initial Incomplete Trips
+## Poisson Distribution {auto-animate="true" background-image="presentation_files/images/slide_background.png"}
+
+- A distribution used to model the probability of an event occurring given the number of events that will occur, and the average occurrence rate ($$\lambda$$) over a period of time
 
 :::: {.columns}
 
-::: {.column width="60%"}
-- Each vehicle was subjected to approximately 20,000 simulated trips for a large enough sample of failures to create meaningful clusters
+::: {.column width="40%"}
 
-- 
+- Mathematically expressed as<br>
+$$P\left(x, \lambda\right) = \frac{{e^{ - \lambda } \lambda ^x }}{{x!}}$$ for $$x = 0, 1, 2, ...$$
+
+- We can plot what this may look like over $$n = 30$$ events using the following code:
+
+```{r}
+
+## How many events will occur?
+events <- c(0:30)
+
+## Probability Mass Function
+pmf <- dpois(x = events, lambda = 8)
+
+## Make a data frame
+pmf_df <- data.frame(events, pmf)
+
+## Plot the Poisson Distribution
+p <- ggplot(
+  data = pmf_df, 
+  mapping = aes(
+    x = events,
+    y = pmf
+  )) + 
+  geom_point() +
+  geom_line() +
+  labs(
+    title = "Poisson Distribution",
+    subtitle = "With x = 30, lambda = 8",
+    x = "Events",
+    y = "Probability"
+  ) +
+  theme_light()
+
+```
+
 :::
 
-::: {.column width="40%"}
+::: {.column width="60%"}
+
 ```{r}
+#| echo: false
+
+p
+
+```
+
+:::
+::::
+
+## Initial Incomplete Trips {background-image="presentation_files/images/slide_background.png"}
+
+:::: {.columns}
+
+::: {.column width="40%"}
+- Each vehicle was subjected to approximately 20,000 simulated trips
+
+- A large number of simulations ensured that there were enough failures to create meaningful clusters for modeling
+:::
+
+::: {.column width="60%"}
+```{r}
+#| echo: false
+
+d_initial_outcomes <-
+  v_probability_outcomes %>%
+  readr::read_csv(
+    show_col_types = FALSE, 
+    col_select = vehicle:outcome
+  ) %>%
+  dplyr::group_by(vehicle) %>%
+  dplyr::summarise(
+    simulations = dplyr::n(),
+    num_failed = sum(outcome),
+    prop_failed = (num_failed / simulations),
+    .groups = "drop"
+  ) %>%
+  dplyr::arrange(dplyr::desc(prop_failed)) %>%
+  dplyr::left_join(
+    y = d_ev_mkt_share %>%
+      dplyr::select(
+        index, 
+        vehicle_make, 
+        vehicle_model
+      ),
+    by = c("vehicle" = "index")
+  ) %>%
+  dplyr::select(
+    vehicle_make, 
+    vehicle_model, 
+    dplyr::everything(),
+    -vehicle
+  )
+
+d_initial_outcomes_gt <-
+  d_initial_outcomes %>%
+  gt::gt() %>%
+  gt::tab_header(title = "Overall Simulated Trip Performance by Vehicle") %>%
+  gt::cols_label(
+    vehicle_make = "Manufacturer",
+    vehicle_model = "Model",
+    simulations = "Trips",
+    num_failed = "Number Failed",
+    prop_failed = "Failure Percentage"
+  ) %>%
+  gt::tab_footnote("Hyundai Kona Electric simulations were truncated by 2,223 because of a software related issue") %>%
+  gt::fmt_integer(c(simulations, num_failed)) %>%
+  gt::fmt_percent(prop_failed) %>%
+  gt::as_raw_html()
+
+d_initial_outcomes_gt
 
 ```
 :::
 
 ::::
 
-## Models
+## Models {background-image="presentation_files/images/slide_background.png"}
 
-## New Stations
+- We leverage the following two machine learning models
 
-## Final Incomplete Trips
+:::: {.columns}
 
-# Results
+::: {.column width="40%"}
 
-## Outcome Analysis
+- K-Means Clustering
 
-# Future Enhancements
+:::
 
-## Solution Enhancements
+::: {.column width="40%"}
 
-## Future Features
+- Affinity Propagation
 
-# Conclusion
+:::
 
-## Achievements
+::::
 
-## Closing Statements
+## New Stations {background-image="presentation_files/images/slide_background.png"}
+
+## Final Incomplete Trips {background-image="presentation_files/images/slide_background.png"}
+
+# Results {background-image="presentation_files/images/slide_background.png"}
+
+## Outcome Analysis {background-image="presentation_files/images/slide_background.png"}
+
+# Future Enhancements {background-image="presentation_files/images/slide_background.png"}
+
+## Future Features {background-image="presentation_files/images/slide_background.png"}
+
+- In future iterations of this project we aim to enhance our simulation conditions:
+  - Elevation should factor into energy consumption
+  - Weather and temperature likely have an adverse effect on range
+  
+- We also plan to research more into the cost of removing inefficient station locations in favor of consolidating ports with minimal network reliability impact
+
+# Conclusion {background-image="presentation_files/images/slide_background.png"}
+
+## Achievements {background-image="presentation_files/images/slide_background.png"}
+
+- Using our simulation algorithm we were able to reduce the number of failed trips by suggesting the fewest necessary charging stations in key locations
+
+- The largest reduction
+
+## Closing Statements {background-image="presentation_files/images/slide_background.png"}
+
+- Thanks for listening!
+
+:::: {.columns}
+
+::: {.column width="50%"}
+- Follow us on GitHub 💻
+  - @jasoncareyco95
+:::
+
+::: {.column width="50%"}
+- Send us an email ✉️
+  - jcarey9@msudenver.edu
+:::
+::::
