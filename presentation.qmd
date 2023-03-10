@@ -168,7 +168,9 @@ d_chg_stations_gt
 
 - To accomplish this, we've encoded socket compatibility with the map shown:
 
-- *Note*: We ignore NEMA520 and NEMA515 plugs because none of the top 15 electric vehicles by market share have compatibility with these sockets^[And they make up a fraction of overall station locations!<br>_]
+::: {.callout-note icon=false}
+We ignore NEMA520 and NEMA515 plugs because none of the top 15 electric vehicles by market share have compatibility with these sockets^[And they make up a marginal number of overall station locations!<br>_]
+:::
 :::
 
 ::: {.column width="40%"}
@@ -217,7 +219,9 @@ d_ev_sockets_gt
 ::: {.column width="40%"}
 - Exploring the electric vehicle registration data for Colorado we determined that the 15 vehicles shown would be used in our simulations
 
-- *Note*: Socket/plug compatibility is also included in this table for our simulations, however, is omitted here for clarity
+::: {.callout-note icon=false}
+Socket/plug compatibility is also included in this table for our simulations, however, is omitted here for clarity
+:::
 :::
 
 ::: {.column width="60%"}
