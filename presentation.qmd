@@ -18,16 +18,6 @@ format:
       data-background-size: cover
 ---
 
-```{css, include=FALSE}
-.left-align {
-  text-align: left !important
-}
-
-.right-align {
-  text-align: right !important
-}
-```
-
 ```{r, include=FALSE}
 #| echo: false
 
@@ -148,11 +138,26 @@ d_chg_stations_gt <-
   gt::tab_footnote(
     footnote = "Data shows first 6 of 1,698 station locations, with the data last collected on February 3rd, 2023"
   ) %>%
+  gt::tab_style(
+    style = gt::cell_text(size = gt::pct(80)),
+    locations = list(
+      gt::cells_title(),
+      gt::cells_column_labels(),
+      gt::cells_body(),
+      gt::cells_stub(),
+      gt::cells_stubhead(),
+      gt::cells_footnotes()
+    )
+  ) %>%
   gt::as_raw_html()
 
 d_chg_stations_gt
 
 ```
+
+## Charging Station Map {background-image="presentation_files/images/slide_background.png"}
+
+![Colorado's Charging Station Map as of February 3rd, 2023](presentation_files/images/maps/basemap/basemap_fuel_stations.png)
 
 ## Electric Vehicle Sockets {background-image="presentation_files/images/slide_background.png"}
 
@@ -182,6 +187,17 @@ d_ev_sockets_gt <-
   gt::tab_header(title = "Socket Compatibility Map") %>%
   gt::tab_stubhead(label = "Socket Type") %>%
   gt::cols_label(value = "Value") %>%
+  gt::tab_style(
+    style = gt::cell_text(size = gt::pct(80)),
+    locations = list(
+      gt::cells_title(),
+      gt::cells_column_labels(),
+      gt::cells_body(),
+      gt::cells_stub(),
+      gt::cells_stubhead(),
+      gt::cells_footnotes()
+    )
+  ) %>%
   gt::as_raw_html()
 
 d_ev_sockets_gt
@@ -227,6 +243,17 @@ d_ev_mkt_share_gt <-
   gt::tab_footnote("Based on active registrations with the DMV as of February 1st, 2023") %>%
   gt::fmt_integer(range) %>%
   gt::fmt_percent(mkt_share) %>%
+  gt::tab_style(
+    style = gt::cell_text(size = gt::pct(80)),
+    locations = list(
+      gt::cells_title(),
+      gt::cells_column_labels(),
+      gt::cells_body(),
+      gt::cells_stub(),
+      gt::cells_stubhead(),
+      gt::cells_footnotes()
+    )
+  ) %>%
   gt::as_raw_html()
 
 d_ev_mkt_share_gt
@@ -241,6 +268,8 @@ d_ev_mkt_share_gt
 - We reference TIGER/Line Shapefiles for when we make adjustments to our machine learning model suggestions 
 
 - These adjustments ensure that model suggestions are in valid locations along a primary or secondary roadways
+
+![Colorado's Primary and Secondary Roadways](presentation_files/images/maps/plain/roads.png)
 
 ## Outbound Schema {background-image="presentation_files/images/slide_background.png"}
 
@@ -284,6 +313,17 @@ d_outcome_schema_gt <-
   ) %>%
   gt::tab_footnote("Data shows first 6 of 166,725 simulated routes across 15 vehicle models") %>%
   gt::fmt_integer(distance) %>%
+  gt::tab_style(
+    style = gt::cell_text(size = gt::pct(80)),
+    locations = list(
+      gt::cells_title(),
+      gt::cells_column_labels(),
+      gt::cells_body(),
+      gt::cells_stub(),
+      gt::cells_stubhead(),
+      gt::cells_footnotes()
+    )
+  ) %>%
   gt::as_raw_html()
 
 d_outcome_schema_gt
@@ -295,15 +335,7 @@ d_outcome_schema_gt
 
 # Methodology {background-image="presentation_files/images/slide_background.png"}
 
-## Vehicles {background-image="presentation_files/images/slide_background.png"}
-
-- Our project takes a vehicle specific approach to generating new charging station suggestions
-
-- Each electric vehicle has specific characteristics such as range, socket compatibility, build quality, estimated useful battery life, etc
-
-- A universal model would be too general to suggest meaningful station locations for the consumer of these vehicles because of the diversity in each model
-
-## Route Generation {.incremental background-image="presentation_files/images/slide_background.png"}
+## Route Generation {background-image="presentation_files/images/slide_background.png"}
 
 :::: {.columns}
 
@@ -325,7 +357,7 @@ d_outcome_schema_gt
 :::
 
 ::: {.column width="40%"}
-
+![Valid and Invalid Routes](presentation_files/images/maps/basemap/basemap_valid_route.png)
 :::
 
 ::::
@@ -349,7 +381,7 @@ d_outcome_schema_gt
 ::: aside
 :::
 
-## Poisson Distribution {auto-animate="true" background-image="presentation_files/images/slide_background.png"}
+## Poisson Distribution {background-image="presentation_files/images/slide_background.png"}
 
 - A distribution used to model the probability of an event occurring given the number of events that will occur, and the average occurrence rate ($\lambda$) over a period of time
 
@@ -363,7 +395,7 @@ $P\left(x, \lambda\right) = \frac{{e^{ - \lambda } \lambda ^x }}{{x!}}$ for $x =
 - We can plot what this may look like over $n = 30$ events using the following code:
 
 ```{r}
-#| echo: fenced
+#| echo: true
 
 ## How many events will occur?
 events <- c(0:30)
@@ -464,6 +496,17 @@ d_initial_outcomes_gt <-
   gt::tab_footnote("Hyundai Kona Electric simulations were truncated by 2,223 because of a software related issue") %>%
   gt::fmt_integer(c(simulations, num_failed)) %>%
   gt::fmt_percent(prop_failed) %>%
+  gt::tab_style(
+    style = gt::cell_text(size = gt::pct(80)),
+    locations = list(
+      gt::cells_title(),
+      gt::cells_column_labels(),
+      gt::cells_body(),
+      gt::cells_stub(),
+      gt::cells_stubhead(),
+      gt::cells_footnotes()
+    )
+  ) %>%
   gt::as_raw_html()
 
 d_initial_outcomes_gt
@@ -475,20 +518,23 @@ d_initial_outcomes_gt
 
 ## Models {background-image="presentation_files/images/slide_background.png"}
 
-- We leverage the following two machine learning models
-
 :::: {.columns}
+- Suggesting new station locations is dependent on two models; K-Means Clustering, and Affinity Propagation
 
 ::: {.column width="50%"}
-
 - K-Means Clustering
 
+- User-driven clustering algorithm where $k$ is specified
+
+![K-Means Clustering Example from SciKit Learn](presentation_files/images/km_example.png)
 :::
 
 ::: {.column width="50%"}
-
 - Affinity Propagation
 
+- Data-driven clustering algorithm where the data relays where clusters should be centered
+
+![Affinity Propagation Example from SciKit Learn](presentation_files/images/ap_example.png)
 :::
 
 ::::
@@ -498,9 +544,9 @@ d_initial_outcomes_gt
 :::: {.columns}
 
 ::: {.column width="40%"}
-- For each vehicle, our models created suggestions of where to construct new charging stations based on the centroids of each cluster of simulation failures
+- By clustering our simulation outcomes, our models could suggest new station locations near the cluster centroid
 
-- We attempted to validate these suggestions by shifting them to the closest primary or secondary roadways
+- To validate our model's suggestions we would shift the proposed coordinates to the nearest primary and secondary roadways
 :::
 
 ::: {.column width="60%"}
@@ -554,6 +600,17 @@ d_model_suggestions_gt <-
     ap_model = "Affinity Propagation Suggestions"
   ) %>%
   gt::fmt_integer(c(k_means_model, ap_model)) %>%
+  gt::tab_style(
+    style = gt::cell_text(size = gt::pct(80)),
+    locations = list(
+      gt::cells_title(),
+      gt::cells_column_labels(),
+      gt::cells_body(),
+      gt::cells_stub(),
+      gt::cells_stubhead(),
+      gt::cells_footnotes()
+    )
+  ) %>%
   gt::as_raw_html()
 
 d_model_suggestions_gt
@@ -563,9 +620,22 @@ d_model_suggestions_gt
 
 ::::
 
+## New Stations Map {background-image="presentation_files/images/slide_background.png"}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+![New Charging Station Location Suggestions](presentation_files/images/maps/basemap/basemap_outcomes.png)
+:::
+::: {.column width="50%"}
+![New Charging Station Location Suggestions with Validation](presentation_files/images/maps/basemap/basemap_snapped_outcomes.png)
+:::
+
+::::
+
 ## Final Incomplete Trips {background-image="presentation_files/images/slide_background.png"}
 
-- After incorporating the validated affinity propagation suggestions into our fuel stations data, we retried the simulations that failed to see if there was a change
+- After incorporating the validated affinity propagation suggestions into our fuel stations data, we retried the simulations that failed to see if the outcome changed
 
 ```{r}
 #| echo: false
@@ -613,7 +683,6 @@ d_phase_2_outcomes <-
     p_failed_am
   ) %>%
   dplyr::arrange(
-    ## Just for you Kyle ;)
     -p_failed_bm,
     -p_failed_am
   )
@@ -633,6 +702,17 @@ d_phase_2_gt <-
   ) %>%
   gt::fmt_integer(c(simulations, num_failed_bm, num_failed_am)) %>%
   gt::fmt_percent(c(p_failed_bm, p_failed_am)) %>%
+  gt::tab_style(
+    style = gt::cell_text(size = gt::pct(80)),
+    locations = list(
+      gt::cells_title(),
+      gt::cells_column_labels(),
+      gt::cells_body(),
+      gt::cells_stub(),
+      gt::cells_stubhead(),
+      gt::cells_footnotes()
+    )
+  ) %>%
   gt::as_raw_html()
 
 d_phase_2_gt
@@ -646,10 +726,11 @@ d_phase_2_gt
 
 ## Outcome Analysis {background-image="presentation_files/images/slide_background.png"}
 
-- Were our model's suggestions statistically significant?
-
 :::: {.columns}
-::: {.column width="50%"}
+
+::: {.column width="40%"}
+
+- Were our model's suggestions statistically significant?
 
 ```{r}
 #| echo: true
@@ -662,7 +743,6 @@ d_test_results <-
   vehicles %>%
   purrr::map_dfr(
     .f = ~{
-      
       ## Get vehicle record
       vr <- 
         d_phase_2_outcomes %>%
@@ -687,13 +767,13 @@ d_test_results <-
           x_squared = tr$statistic,
           p_value = tr$p.value
         )
-      
     }
   )
 ```
+
 :::
 
-::: {.column width="50%"}
+::: {.column width="60%"}
 
 ```{r}
 #| echo: false
@@ -710,12 +790,25 @@ d_test_results_gt <-
   ) %>%
   gt::fmt_number(x_squared) %>%
   gt::fmt_scientific(p_value) %>%
+  gt::tab_style(
+    style = gt::cell_text(size = gt::pct(80)),
+    locations = list(
+      gt::cells_title(),
+      gt::cells_column_labels(),
+      gt::cells_body(),
+      gt::cells_stub(),
+      gt::cells_stubhead(),
+      gt::cells_footnotes()
+    )
+  ) %>%
   gt::as_raw_html()
 
 d_test_results_gt
 
 ```
+
 :::
+
 ::::
 
 # Future Enhancements {background-image="presentation_files/images/slide_background.png"}
@@ -741,5 +834,4 @@ d_test_results_gt
 
 - Thanks for listening!
 
-- Send us an email ✉️
-  - jcarey9@msudenver.edu
+- We hope to publish a more formal report on this topic in the future 
