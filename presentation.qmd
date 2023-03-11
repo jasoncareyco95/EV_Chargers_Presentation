@@ -77,6 +77,7 @@ v_phase_2_outcomes <-
 
 ## Taking Action {background-image="presentation_files/images/slide_background.png"}
 
+::: {.incremental}
 - Our predictions are based on multiple factors, including:
   - Characteristics of the top 15 electric vehicles by market share in Colorado, such as:
     - EPA estimated range
@@ -85,6 +86,7 @@ v_phase_2_outcomes <-
   - Availability of charging stations based on the number of charging ports at each station and random interarrival times of consumers
   - Zoning restrictions within cities and counties where predictions are located
   - Electric grid capacity at prediction locations
+:::
 
 # Data {background-image="presentation_files/images/slide_background.png"}
 
@@ -520,6 +522,10 @@ d_initial_outcomes_gt
 
 ::::
 
+## Initial Incomplete Trips Map {background-image="presentation_files/images/slide_background.png"}
+
+![Incomplete Phase 1 Simulations](presentation_files/images/maps/basemap/basemap_phase1_failures.png)
+
 ## Models {background-image="presentation_files/images/slide_background.png"}
 
 :::: {.columns}
@@ -725,6 +731,10 @@ d_phase_2_gt
 :::
 
 ::::
+
+## Final Incomplete Trips Map {background-image="presentation_files/images/slide_background.png"}
+
+![Incomplete Phase 1 Simulations](presentation_files/images/maps/basemap/basemap_phase2_failures.png)
 
 # Results {background-image="presentation_files/images/slide_background.png"}
 
